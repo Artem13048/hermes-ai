@@ -1090,7 +1090,7 @@ async def unified_handler(event: MessageCreated):
             with_photo = report.get("places_with_photo", 0)
             total_places = report.get("total_places", 0)
             if total_places:
-                text += f"\n📷 Мест с фото: {with_photo}/{total_places}"
+                text += f"\nМест с фото: {with_photo}/{total_places}"
 
             if report["errors"]:
                 text += "\n\nОшибки:\n"
