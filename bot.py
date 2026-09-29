@@ -1081,12 +1081,16 @@ async def unified_handler(event: MessageCreated):
 
             text = (
                 "Импорт завершён.\n\n"
-                f"Городов добавлено: {report['cities_added']}\n"
-                f"Категорий добавлено: {report['categories_added']}\n"
-                f"Мест добавлено: {report['places_added']}\n"
-                f"Мест обновлено: {report['places_updated']}\n"
-                f"Мест пропущено: {report['places_skipped']}"
+                f"Городов добавлено: {report.get('cities_added', 0)}\n"
+                f"Мест добавлено: {report.get('places_added', 0)}\n"
+                f"Мест обновлено: {report.get('places_updated', 0)}\n"
+                f"Мест пропущено: {report.get('places_skipped', 0)}"
             )
+
+            with_photo = report.get("places_with_photo", 0)
+            total_places = report.get("total_places", 0)
+            if total_places:
+                text += f"\n📷 Мест с фото: {with_photo}/{total_places}"
 
             if report["errors"]:
                 text += "\n\nОшибки:\n"
@@ -2057,5 +2061,3 @@ async def callback_handler(event: MessageCallback):
             session.close()
         except Exception:
             logging.exception("close failed")
-
-
