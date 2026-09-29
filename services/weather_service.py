@@ -16,9 +16,8 @@ OPENWEATHER_API_KEY = os.getenv("OPENWEATHER_API_KEY")
 WEATHER_URL = "https://api.openweathermap.org/data/2.5/weather"
 
 
-# ============================================================
+
 # ОСНОВНАЯ ФУНКЦИЯ
-# ============================================================
 
 def get_weather(latitude: float, longitude: float) -> dict:
     """
@@ -97,9 +96,8 @@ def get_weather(latitude: float, longitude: float) -> dict:
         return default
 
 
-# ============================================================
+
 # ФИЛЬТРАЦИЯ МЕСТ ПО ПОГОДЕ
-# ============================================================
 
 def filter_places_by_weather(
     places: list,

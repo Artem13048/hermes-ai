@@ -50,9 +50,7 @@ def estimate_route_hours(route, speed_kmh=4.0, visit_hours=0.5):
     return walking + visiting
 
 
-# ============================================================
 # ВСПОМОГАТЕЛЬНЫЕ
-# ============================================================
 
 def _trim_by_time(route, max_time_hours, min_places):
     while (
@@ -140,13 +138,13 @@ def build_route(
             route = _trim_by_budget(route, max_budget, min_places=1)
         return route
 
-    # --- 5. Размер маршрута ---
+    # 5. Размер маршрута
     route_size = random.randint(
         min_places,
         min(max_places, len(places)),
     )
 
-    # --- 6. Стартовая точка ---
+    # 6. Стартовая точка
     #   budget=None  → начинаем с самого дорогого
     #   budget задан → случайная (или тоже с дорогого — решай)
     if max_budget is None:
@@ -165,7 +163,7 @@ def build_route(
     else:
         remaining = [p for p in places if p is not start]
 
-    # --- 7. Жадный выбор ---
+    # 7. Жадный выбор
     while remaining and len(route) < route_size:
 
         current = route[-1]
@@ -230,14 +228,14 @@ def build_route(
         route.append(next_place)
         remaining.remove(next_place)
 
-    # --- 8. Финальные проверки ---
+    # 8. Финальные проверки
     if max_time_hours is not None:
         route = _trim_by_time(route, max_time_hours, min_places)
 
     if max_budget is not None:
         route = _trim_by_budget(route, max_budget, min_places)
 
-    # --- 9. При budget=None добираем бесплатными до min_places ---
+    # 9. При budget=None добираем бесплатными до min_places
     if max_budget is None and len(route) < min_places:
         free_places = [
             p for p in places

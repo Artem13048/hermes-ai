@@ -9,9 +9,8 @@ from urllib.parse import urlencode
 
 import requests
 
-# ============================================================
+
 # НАСТРОЙКА
-# ============================================================
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 MAPS_DIR = BASE_DIR / "storage" / "maps"
@@ -22,20 +21,17 @@ YANDEX_MAPS_API_KEY = os.getenv("YANDEX_MAPS_API_KEY", "")
 STATIC_MAPS_URL = "https://static-maps.yandex.ru/1.x/"
 
 
-# ============================================================
+
 # ГЕНЕРАЦИЯ КАРТЫ
-# ============================================================
 
 def generate_route_map(route_data: list, route_id: str = "route") -> Path | None:
     """
     Генерирует статичную карту маршрута через Яндекс.Карты.
-
     route_data — список словарей вида:
     [
         {"name": "...", "latitude": 55.79, "longitude": 49.10},
         ...
     ]
-
     Возвращает путь к PNG или None, если не удалось.
     """
     if not YANDEX_MAPS_API_KEY:
@@ -69,7 +65,7 @@ def generate_route_map(route_data: list, route_id: str = "route") -> Path | None
         else:
             style = "pm2rdm"
 
-        # ВАЖНО: у Яндекс.Карт порядок lon,lat
+        # у Яндекс.Карт порядок lon,lat
         pt_parts.append(f"{lon},{lat},{style}")
 
     pt_param = "~".join(pt_parts)
@@ -103,19 +99,15 @@ def generate_route_map(route_data: list, route_id: str = "route") -> Path | None
         return None
 
 
-# ============================================================
+
 # ССЫЛКА НА ЯНДЕКС.КАРТЫ С ТОЧКАМИ МАРШРУТА
-# ============================================================
 
 def generate_yandex_maps_link(route_data: list) -> str | None:
     """
     Генерирует ссылку на Яндекс.Карты с маршрутом по всем точкам.
-
     Для маршрута используется параметр rtext:
     широта,долгота~широта,долгота~...
-
     rtt=pedestrian — пешеходный маршрут.
-
     Такой формат подходит как для веб-версии Яндекс.Карт,
     так и для открытия маршрута на мобильном устройстве.
     """

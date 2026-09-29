@@ -178,9 +178,7 @@ def generate_route_pdf(route_payload: dict) -> Path:
 
     story.append(Spacer(1, 0.5 * cm))
 
-    # ============================================================
     # КАРТА МАРШРУТА
-    # ============================================================
 
     map_path = route_payload.get("map_path")
     if map_path and os.path.exists(map_path):
@@ -200,9 +198,7 @@ def generate_route_pdf(route_payload: dict) -> Path:
         except Exception:
             logging.exception("Не удалось вставить карту в PDF")
 
-    # ============================================================
     # ССЫЛКА НА ЯНДЕКС.КАРТЫ
-    # ============================================================
 
     map_link = route_payload.get("map_link")
     if map_link:
@@ -216,7 +212,7 @@ def generate_route_pdf(route_payload: dict) -> Path:
         story.append(Paragraph(link_html, body_style))
         story.append(Spacer(1, 0.5 * cm))
 
-    # --- Места ---
+    # Места
     places = route_payload.get("places", [])
     for index, place in enumerate(places, start=1):
         story.append(

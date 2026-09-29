@@ -18,9 +18,9 @@ from pydantic import BaseModel
 from app.database import SessionLocal
 from app.models import Place, City, Category, UserLike
 
-# ============================================================
+
 # ИМПОРТ ЯДРА БОТА (общий bot и dp с bot.py)
-# ============================================================
+
 
 from app.bot_core import bot, dp
 
@@ -32,9 +32,9 @@ import bot as bot_handlers  # noqa: F401
 from maxapi.webhook.fastapi import FastAPIMaxWebhook
 
 
-# ============================================================
+
 # НАСТРОЙКА
-# ============================================================
+
 
 logging.basicConfig(
     level=logging.INFO,
@@ -61,9 +61,9 @@ def _msk_now_str(fmt: str = "%d.%m %H:%M") -> str:
     return datetime.now(MSK).strftime(fmt)
 
 
-# ============================================================
+
 # СОЗДАНИЕ ПРИЛОЖЕНИЯ И WEBHOOK
-# ============================================================
+
 
 # Создаём webhook-обёртку. Она сама знает, как передавать события в dp.
 WEBHOOK_SECRET = os.getenv("MAX_WEBHOOK_SECRET", "")
@@ -93,9 +93,7 @@ app.add_middleware(
 webhook.setup(app, path=WEBHOOK_PATH)
 
 
-# ============================================================
 # СХЕМЫ
-# ============================================================
 
 class LikeRequest(BaseModel):
     user_id: int
@@ -122,9 +120,7 @@ class SetUserCityRequest(BaseModel):
     city_id: int
 
 
-# ============================================================
 # БАЗОВЫЕ
-# ============================================================
 
 @app.get("/")
 def root():
@@ -202,9 +198,8 @@ def set_user_city(req: SetUserCityRequest):
         session.close()
 
 
-# ============================================================
 # МЕСТА
-# ============================================================
+
 
 @app.get("/api/places")
 def get_places(
@@ -244,10 +239,7 @@ def get_places(
     finally:
         session.close()
 
-
-# ============================================================
 # ЛАЙКИ
-# ============================================================
 
 @app.post("/api/likes")
 def add_like(req: LikeRequest):
@@ -309,9 +301,7 @@ def get_likes(user_id: int):
         session.close()
 
 
-# ============================================================
 # ГЕНЕРАЦИЯ МАРШРУТА
-# ============================================================
 
 @app.post("/api/route/generate")
 def generate_route(req: GenerateRouteRequest):
@@ -377,9 +367,7 @@ def generate_route(req: GenerateRouteRequest):
         session.close()
 
 
-# ============================================================
 # СОХРАНЁННЫЕ МАРШРУТЫ
-# ============================================================
 
 @app.post("/api/routes/save")
 def save_route(req: SaveRouteRequest):
@@ -506,9 +494,7 @@ def delete_route(route_id: int):
         session.close()
 
 
-# ============================================================
 # ЗАПУСК
-# ============================================================
 
 if __name__ == "__main__":
     import uvicorn

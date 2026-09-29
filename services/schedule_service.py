@@ -7,9 +7,8 @@ import re
 from datetime import datetime, time
 
 
-# ============================================================
+
 # ПАРСИНГ ВРЕМЕНИ РАБОТЫ
-# ============================================================
 
 def parse_opening_hours(opening_hours: str | None) -> tuple[time, time] | str | None:
     """
@@ -48,9 +47,7 @@ def parse_opening_hours(opening_hours: str | None) -> tuple[time, time] | str | 
     return None
 
 
-# ============================================================
 # ПРОВЕРКА — ОТКРЫТО ЛИ СЕЙЧАС
-# ============================================================
 
 def is_place_open(opening_hours: str | None, now: datetime | None = None) -> bool:
     """
@@ -84,14 +81,11 @@ def is_place_open(opening_hours: str | None, now: datetime | None = None) -> boo
     return start <= current_time <= end
 
 
-# ============================================================
 # ФИЛЬТРАЦИЯ МЕСТ ПО ВРЕМЕНИ РАБОТЫ
-# ============================================================
 
 def filter_places_by_schedule(places: list) -> tuple[list, str | None]:
     """
     Убирает закрытые места.
-
     Возвращает (отфильтрованные места, причина).
     """
     now = datetime.now()

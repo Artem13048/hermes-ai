@@ -1,6 +1,5 @@
 """
-Ядро бота: Bot, Dispatcher и всё, что нужно обоим процессам —
-и polling-скрипту, и FastAPI-приложению с webhook.
+Ядро бота
 """
 
 import logging

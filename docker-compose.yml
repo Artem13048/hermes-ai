@@ -1,0 +1,52 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: hermes-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: hermes
+      POSTGRES_PASSWORD: hermes_password
+      POSTGRES_DB: hermes
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hermes -d hermes"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - hermes-network
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hermes-app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql+psycopg2://hermes:hermes_password@db:5432/hermes
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./storage:/app/storage
+      - ./certificates.pem:/app/certificates.pem:ro
+    command: uvicorn api:app --host 0.0.0.0 --port 8000
+    networks:
+      - hermes-network
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  hermes-network:
+    driver: bridge

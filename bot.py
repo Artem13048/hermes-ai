@@ -1,6 +1,4 @@
-# ============================================================
-# ИМПОРТ ЯДРА БОТА — ДОЛЖЕН БЫТЬ ПЕРВЫМ
-# ============================================================
+# ИМПОРТ ЯДРА БОТА
 
 from app.bot_core import bot, dp
 
@@ -10,9 +8,7 @@ print(
 )
 
 
-# ============================================================
 # ОСТАЛЬНЫЕ ИМПОРТЫ
-# ============================================================
 
 import asyncio
 import logging
@@ -67,9 +63,8 @@ from services.route_service import (
 )
 
 
-# ============================================================
 # НАСТРОЙКА
-# ============================================================
+
 
 logging.basicConfig(
     level=logging.INFO,
@@ -87,9 +82,7 @@ ADMIN_IDS = {
 logging.info(f"Админов загружено: {len(ADMIN_IDS)}")
 
 
-# ============================================================
 # ВРЕМЯ (MSK)
-# ============================================================
 
 MSK = ZoneInfo("Europe/Moscow")
 
@@ -106,14 +99,7 @@ def _msk_now_str(fmt: str = "%d.%m %H:%M") -> str:
     return datetime.now(MSK).strftime(fmt)
 
 
-# ============================================================
 # ОТПРАВКА СООБЩЕНИЙ
-# ============================================================
-#
-# Универсальная функция send(), которая работает и для
-# MessageCreated (есть event.message), и для BotStarted
-# (нет event.message, но есть event.send / bot.send_message).
-#
 
 def _extract_user_id(event) -> int | None:
     """Пытается достать user_id из любого типа события."""
@@ -153,14 +139,6 @@ def _extract_user_id(event) -> int | None:
 
 
 async def send(event, text: str, keyboard=None) -> bool:
-    """
-    Универсальная отправка сообщения.
-
-    Порядок попыток:
-      1. event.message.answer() — для MessageCreated/MessageCallback
-      2. event.send()           — для BotStarted (если есть)
-      3. bot.send_message()     — фолбэк через API
-    """
     kwargs = {}
     if keyboard is not None:
         kwargs["attachments"] = [keyboard]
@@ -215,9 +193,7 @@ async def send_pdf(event, pdf_path) -> bool:
     return False
 
 
-# ============================================================
 # ЗАЩИТА ОТ ДУБЛЕЙ ПО mid
-# ============================================================
 
 _seen_mids = set()
 _SEEN_MIDS_LIMIT = 5000
@@ -255,9 +231,7 @@ def _is_duplicate_mid(event) -> bool:
     return False
 
 
-# ============================================================
 # СОСТОЯНИЯ
-# ============================================================
 
 user_route_settings = {}
 user_last_route = {}
@@ -273,9 +247,7 @@ def _get_or_create_settings(user_id: int) -> dict:
     return user_route_settings[user_id]
 
 
-# ============================================================
 # БЕЗОПАСНЫЙ ДОСТУП
-# ============================================================
 
 def _safe_str(value, default: str = "") -> str:
     if value is None:
@@ -319,9 +291,7 @@ def _serialize_place(place) -> dict:
     }
 
 
-# ============================================================
 # КОНТЕКСТНЫЕ ФИЛЬТРЫ (погода + время работы)
-# ============================================================
 
 def _apply_context_filters(session, places: list, city) -> tuple[list, list, dict]:
     reasons = []
@@ -351,9 +321,7 @@ def _apply_context_filters(session, places: list, city) -> tuple[list, list, dic
     return places, reasons, weather
 
 
-# ============================================================
 # ГОРОДА
-# ============================================================
 
 OTHER_CITY_ID = -1
 
@@ -381,9 +349,7 @@ def _city_name(session, city_id) -> str:
     return city.name if city else "Неизвестный город"
 
 
-# ============================================================
 # КЛАВИАТУРЫ — АДМИНКА
-# ============================================================
 
 def admin_keyboard():
     builder = InlineKeyboardBuilder()
@@ -445,9 +411,7 @@ def admin_export_city_keyboard(session):
     return builder.as_markup()
 
 
-# ============================================================
 # КЛАВИАТУРЫ — ПОЛЬЗОВАТЕЛЬ
-# ============================================================
 
 def city_keyboard(session, back_payload: str | None = None):
     builder = InlineKeyboardBuilder()
@@ -592,9 +556,7 @@ def category_keyboard(categories, selected):
     return builder.as_markup()
 
 
-# ============================================================
 # ВСПОМОГАТЕЛЬНЫЕ
-# ============================================================
 
 def _get_user(session, user_id: int):
     return session.query(User).filter(
@@ -713,9 +675,7 @@ def _format_route_message(
     return message
 
 
-# ============================================================
 # AI-МАРШРУТ
-# ============================================================
 
 async def _build_ai_route(event, session, user_id: int, text: str, params: dict):
     user = _get_user(session, user_id)
@@ -919,9 +879,7 @@ async def _handle_ai_text(event, user_id: int):
         session.close()
 
 
-# ============================================================
 # ПЕРВЫЙ ЗАПУСК БОТА (bot_started)
-# ============================================================
 
 @dp.bot_started()
 async def bot_started_handler(event):
@@ -968,9 +926,7 @@ async def bot_started_handler(event):
             logging.exception("close failed")
 
 
-# ============================================================
 # /START
-# ============================================================
 
 @dp.message_created(Command("start"))
 async def start_handler(event: MessageCreated):
@@ -1046,9 +1002,7 @@ async def start_handler(event: MessageCreated):
             logging.exception("close failed")
 
 
-# ============================================================
 # /admin
-# ============================================================
 
 @dp.message_created(Command("admin"))
 async def admin_handler(event: MessageCreated):
@@ -1066,9 +1020,7 @@ async def admin_handler(event: MessageCreated):
     )
 
 
-# ============================================================
 # ЕДИНЫЙ ОБРАБОТЧИК (файл + AI)
-# ============================================================
 
 @dp.message_created()
 async def unified_handler(event: MessageCreated):
@@ -1148,9 +1100,7 @@ async def unified_handler(event: MessageCreated):
     await _handle_ai_text(event, user_id)
 
 
-# ============================================================
 # CALLBACK
-# ============================================================
 
 @dp.message_callback()
 async def callback_handler(event: MessageCallback):
@@ -1164,9 +1114,9 @@ async def callback_handler(event: MessageCallback):
     session = SessionLocal()
 
     try:
-        # ====================================================
+
         # СОХРАНИТЬ МАРШРУТ
-        # ====================================================
+
         if payload == "route:save":
             payload_data = user_last_route.get(user_id)
 
@@ -1217,9 +1167,7 @@ async def callback_handler(event: MessageCallback):
                 )
             return
 
-        # ====================================================
         # МОИ МАРШРУТЫ
-        # ====================================================
         if payload == "my_routes":
             routes = session.query(SavedRoute).filter(
                 SavedRoute.user_id == user_id
@@ -1258,9 +1206,7 @@ async def callback_handler(event: MessageCallback):
             )
             return
 
-        # ====================================================
         # ОТКРЫТЬ МАРШРУТ
-        # ====================================================
         if payload.startswith("show_route:"):
             try:
                 route_id = int(payload.split(":")[1])
@@ -1326,9 +1272,7 @@ async def callback_handler(event: MessageCallback):
             await send(event, message, keyboard=builder.as_markup())
             return
 
-        # ====================================================
         # УДАЛИТЬ МАРШРУТ
-        # ====================================================
         if payload.startswith("delete_route:"):
             try:
                 route_id = int(payload.split(":")[1])
@@ -1361,9 +1305,7 @@ async def callback_handler(event: MessageCallback):
             )
             return
 
-        # ====================================================
         # АДМИН: шаблон и инструкция
-        # ====================================================
 
         if payload == "admin:template":
             if not _is_admin(user_id):
@@ -1403,9 +1345,7 @@ async def callback_handler(event: MessageCallback):
 
             return
 
-        # ====================================================
         # ВЫБОР ГОРОДА
-        # ====================================================
 
         if payload.startswith("city:"):
             value = payload.split(":")[1]
@@ -1438,17 +1378,13 @@ async def callback_handler(event: MessageCallback):
             )
             return
 
-        # ====================================================
         # СМЕНИТЬ ГОРОД
-        # ====================================================
 
         if payload == "change_city":
             await _send_city_choice(session, event, back_payload="main_menu")
             return
 
-        # ====================================================
         # ГЛАВНОЕ МЕНЮ
-        # ====================================================
 
         if payload == "main_menu":
             user = _get_user(session, user_id)
@@ -1471,9 +1407,7 @@ async def callback_handler(event: MessageCallback):
             )
             return
 
-        # ====================================================
         # ПОСТРОИТЬ МАРШРУТ
-        # ====================================================
 
         if payload == "build_route":
             user_route_settings[user_id] = _default_settings()
@@ -1485,9 +1419,7 @@ async def callback_handler(event: MessageCallback):
             )
             return
 
-        # ====================================================
         # ВРЕМЯ
-        # ====================================================
 
         if payload.startswith("time:"):
             hours = int(payload.split(":")[1])
@@ -1519,9 +1451,7 @@ async def callback_handler(event: MessageCallback):
             )
             return
 
-        # ====================================================
         # БЮДЖЕТ
-        # ====================================================
 
         if payload.startswith("budget:"):
             value = payload.split(":")[1]
@@ -1561,9 +1491,7 @@ async def callback_handler(event: MessageCallback):
             )
             return
 
-        # ====================================================
         # НАЗАД К БЮДЖЕТУ
-        # ====================================================
 
         if payload == "back_to_budget":
             settings = _get_or_create_settings(user_id)
@@ -1586,9 +1514,7 @@ async def callback_handler(event: MessageCallback):
             )
             return
 
-        # ====================================================
         # КАТЕГОРИИ
-        # ====================================================
 
         if payload.startswith("category:"):
             category_id = int(payload.split(":")[1])
@@ -1616,9 +1542,7 @@ async def callback_handler(event: MessageCallback):
 
             return
 
-        # ====================================================
         # PDF
-        # ====================================================
 
         if payload == "route:pdf":
             payload_data = user_last_route.get(user_id)
@@ -1663,9 +1587,7 @@ async def callback_handler(event: MessageCallback):
             )
             return
 
-        # ====================================================
         # АДМИНКА
-        # ====================================================
 
         if payload == "admin:db":
             if not _is_admin(user_id):
@@ -1943,9 +1865,7 @@ async def callback_handler(event: MessageCallback):
             await send(event, "\n".join(lines), keyboard=admin_db_keyboard())
             return
 
-        # ====================================================
         # ГЕНЕРАЦИЯ МАРШРУТА (обычный режим)
-        # ====================================================
 
         if payload == "route:generate":
             settings = user_route_settings.get(user_id)
