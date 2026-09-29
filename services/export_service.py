@@ -1,40 +1,50 @@
 """
-Экспортрует данные из БД в JSON.
+Экспорт данных из БД в JSON.
+
+Все функции делегируют в `admin_service`, где реализована
+единая логика импорта/экспорта.
+
+Экспортируются ВСЕ поля, включая:
+- photo_url
+- long_description
+- opening_hours
+- benefits
+- rating
+- ticket_url / source_url
 """
 
-import json
 import logging
-import re
+import time
 import uuid
 from datetime import datetime
 from pathlib import Path
 
-from app.database import SessionLocal
-from app.models import City, Place
+from services.admin_service import (
+    export_db_to_json as _admin_export_all,
+    export_city_to_json as _admin_export_city,
+    save_json_file,
+)
 
 
+# ============================================================
 # НАСТРОЙКА
+# ============================================================
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 EXPORT_DIR = BASE_DIR / "storage" / "exports"
 EXPORT_DIR.mkdir(parents=True, exist_ok=True)
 
 
-# ВСПОМОГАТЕЛЬНЫЕ
+def _generate_filename(prefix: str) -> str:
+    """Генерирует уникальное имя файла экспорта."""
+    file_id = uuid.uuid4().hex[:8]
+    date_str = datetime.now().strftime("%d-%m-%Y_%H-%M")
+    return f"{prefix}_{date_str}_{file_id}.json"
 
 
-def _safe_filename(text: str) -> str:
-    """Превращает название города в безопасное имя файла."""
-    text = text.encode("ascii", "ignore").decode() or "city"
-    text = re.sub(r"[^\w\-]", "_", text)
-    text = text.strip("_")
-    return text or "city"
-
-
-def _cleanup_old_exports(days: int = 7):
+def _cleanup_old_exports(days: int = 7) -> None:
     """Удаляет старые экспорты (старше N дней)."""
     try:
-        import time
         now = time.time()
         for old_file in EXPORT_DIR.glob("*.json"):
             if now - old_file.stat().st_mtime > days * 86400:
@@ -44,154 +54,50 @@ def _cleanup_old_exports(days: int = 7):
         logging.exception("Не удалось очистить старые экспорты")
 
 
-# ЭКСПОРТ ВСЕЙ БД
+# ============================================================
+# ПУБЛИЧНЫЕ ФУНКЦИИ — возвращают Path
+# ============================================================
+# bot.py ожидает, что export_db_to_json() и export_city_to_json()
+# возвращают ПУТЬ к файлу. Оставляем такое поведение.
 
 def export_db_to_json() -> Path:
     """
-    Выгружает ВСЕ города и места из БД в JSON-файл.
+    Выгружает ВСЮ БД в JSON-файл.
     Возвращает путь к файлу.
     """
-    session = SessionLocal()
+    data = _admin_export_all()
 
-    try:
-        cities = session.query(City).order_by(City.id).all()
+    filename = _generate_filename("export_all")
+    path = EXPORT_DIR / filename
 
-        # Маппинг: real_db_id -> json_id (1, 2, 3, ...)
-        city_id_map = {}
-        cities_json = []
+    save_json_file(data, path)
 
-        for index, city in enumerate(cities, start=1):
-            city_id_map[city.id] = index
-            cities_json.append({
-                "id": index,
-                "name": city.name,
-                "region": getattr(city, "region", None),
-                "country": getattr(city, "country", "Россия"),
-                "latitude": city.latitude,
-                "longitude": city.longitude,
-            })
+    logging.info(
+        f"Экспорт всей БД: {path} "
+        f"(городов: {len(data.get('cities', []))}, "
+        f"мест: {len(data.get('places', []))})"
+    )
 
-        # Места
-        places = session.query(Place).order_by(
-            Place.city_id, Place.id
-        ).all()
+    _cleanup_old_exports()
+    return path
 
-        places_json = []
-        for place in places:
-            json_city_id = city_id_map.get(place.city_id)
-            if json_city_id is None:
-                continue
-
-            places_json.append({
-                "city_id": json_city_id,
-                "category_id": place.category_id,
-                "name": place.name,
-                "address": place.address,
-                "description": place.description,
-                "price": place.price,
-                "ticket_url": place.ticket_url,
-                "source_url": place.source_url,
-                "latitude": place.latitude,
-                "longitude": place.longitude,
-                "rating": place.rating,
-                "is_active": place.is_active,
-            })
-
-        data = {
-            "exported_at": datetime.utcnow().isoformat(),
-            "cities": cities_json,
-            "places": places_json,
-        }
-
-        # Имя файла
-        file_id = uuid.uuid4().hex[:8]
-        date_str = datetime.now().strftime("%d-%m-%Y_%H-%M")
-        filename = f"export_all_{date_str}_{file_id}.json"
-        path = EXPORT_DIR / filename
-
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
-
-        logging.info(
-            f"Экспорт всей БД: {path} "
-            f"(городов: {len(cities_json)}, мест: {len(places_json)})"
-        )
-
-        _cleanup_old_exports()
-        return path
-
-    finally:
-        session.close()
-
-
-# ЭКСПОРТ ОДНОГО ГОРОДА
 
 def export_city_to_json(city_id: int) -> Path:
     """
-    Выгружает ОДИН город и все его места в JSON.
+    Выгружает ОДИН город и все его места в JSON-файл.
     Возвращает путь к файлу.
     """
-    session = SessionLocal()
+    data = _admin_export_city(city_id)
 
-    try:
-        city = session.query(City).filter(City.id == city_id).first()
-        if not city:
-            raise ValueError(f"Город id={city_id} не найден")
+    filename = _generate_filename(f"city_{city_id}")
+    path = EXPORT_DIR / filename
 
-        # Город — всегда json_id = 1 (он один в файле)
-        cities_json = [{
-            "id": 1,
-            "name": city.name,
-            "region": getattr(city, "region", None),
-            "country": getattr(city, "country", "Россия"),
-            "latitude": city.latitude,
-            "longitude": city.longitude,
-        }]
+    save_json_file(data, path)
 
-        # Места этого города
-        places = session.query(Place).filter(
-            Place.city_id == city_id
-        ).order_by(Place.id).all()
+    logging.info(
+        f"Экспорт города id={city_id}: {path} "
+        f"(мест: {len(data.get('places', []))})"
+    )
 
-        places_json = []
-        for place in places:
-            places_json.append({
-                "city_id": 1,            # всегда 1
-                "category_id": place.category_id,
-                "name": place.name,
-                "address": place.address,
-                "description": place.description,
-                "price": place.price,
-                "ticket_url": place.ticket_url,
-                "source_url": place.source_url,
-                "latitude": place.latitude,
-                "longitude": place.longitude,
-                "rating": place.rating,
-                "is_active": place.is_active,
-            })
-
-        data = {
-            "exported_at": datetime.utcnow().isoformat(),
-            "cities": cities_json,
-            "places": places_json,
-        }
-
-        safe_name = _safe_filename(city.name)
-        file_id = uuid.uuid4().hex[:6]
-        date_str = datetime.now().strftime("%d-%m-%Y")
-        filename = f"city_{safe_name}_{date_str}_{file_id}.json"
-        path = EXPORT_DIR / filename
-
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
-
-        logging.info(
-            f"Экспорт города: {city.name} "
-            f"(мест: {len(places_json)}) → {path}"
-        )
-
-        _cleanup_old_exports()
-        return path
-
-    finally:
-        session.close()
+    _cleanup_old_exports()
+    return path
